@@ -1,0 +1,152 @@
+service: products-api
+
+custom:
+  bucket:
+    base-serverless: 'axiz-serverless-template'
+    project-prefix: 'axiz-serverless'
+    prune:
+     automatic: true
+     number: 3
+  accountId: { 'Fn::Join': ['', [{ 'Ref': 'AWS::AccountId' }]] }
+  company: 'test'
+  tables:
+    productsTableName: '${self:custom.company}-products-${self:provider.stage}'
+  topics:
+    productTopic: '${self:custom.company}-topics-products-${self:provider.stage}'
+    productTopicArn: { 'Fn::Join': [ '', [ 'arn:aws:sns:${self:provider.region}:', { 'Ref': 'AWS::AccountId' }, ':${self:custom.topics.productTopic}', ],],}
+  queues:
+    productQueue: '${self:custom.company}-queues-products-${self:provider.stage}'
+    productQueueArn: { 'Fn::Join': [ '', [ 'arn:aws:sqs:${self:provider.region}:', { 'Ref': 'AWS::AccountId' }, ':${self:custom.queues.productQueue}', ],],}
+provider:
+  name: aws
+  runtime: java11
+  stackName: ${self:custom.company}-${self:service}-${self:provider.stage}
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  stackTags:
+    service: ${self:service}
+    stage: ${self:provider.stage}
+    version: ${opt:version, 'latest'}
+    company: ${self:custom.company}
+  deploymentBucket:
+    name: ${self:custom.bucket.base-serverless}
+    maxPreviousDeploymentArtifacts: 3
+    serverSideEncryption: AES256
+  deploymentPrefix: ${self:custom.bucket.project-prefix}
+  #Validar costos de xray
+  #tracing:
+  # lambda: true
+  # apiGateway: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - { "Fn::GetAtt": ["ProductsDynamoDBTable", "Arn" ] }
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource:
+        - '${self:custom.topics.productTopicArn}'
+  environment:
+    PRODUCTS_TABLE_NAME: ${self:custom.tables.productsTableName}
+    PRODUCTS_TOPIC: ${self:custom.topics.productTopicArn}
+    REGION: ${self:provider.region}
+
+package:
+  artifact: 'target/${self:service}-${self:provider.stage}.jar'
+plugins:
+  - serverless-offline
+  - serverless-prune-plugin
+
+functions:
+  listProducts:
+    handler: com.serverless.handler.ListProductsHandler
+    events:
+      - http:
+          path: /products
+          method: get
+  getProduct:
+    handler: com.serverless.handler.GetProductHandler
+    events:
+      - http:
+          path: /products/{id}
+          method: get
+  createProduct:
+    handler: com.serverless.handler.CreateProductHandler
+    events:
+      - http:
+          path: /products
+          method: post
+  deleteProduct:
+    handler: com.serverless.handler.DeleteProductHandler
+    events:
+      - http:
+          path: /products/{id}
+          method: delete
+  eventProduct:
+    handler: src/controller/handler.CreateProductEventHandler
+    events:
+      - sqs:
+          arn: '${self:custom.queues.productQueueArn}'
+
+resources:
+  Description: zzzzzz stack
+  Resources:
+    ProductsDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tables.productsTableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: name
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: name
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    ProductTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.topics.productTopic}
+        Subscription:
+          - Endpoint:
+              Fn::GetAtt:
+                - "ProductQueue"
+                - "Arn"
+            Protocol: sqs
+    ProductQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:custom.queues.productQueue}
+        #VisibilityTimeout: ${self:custom.visibilityTimeout}
+    ProductQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - Ref: ProductQueue
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Sid: allow-sns-${self:custom.topics.productTopic}
+              Effect: Allow
+              Principal: "*"
+              Resource: !GetAtt
+                - ProductQueue
+                - Arn
+              Action:
+                - "SQS:SendMessage"
+                - "SQS:ReceiveMessage"
+              Condition:
+                ArnEquals:
+                  "aws:SourceArn": !Ref ProductTopic

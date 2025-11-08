@@ -1,0 +1,10 @@
+D:\Workspace\Trabajo\qualifacts\nuevo\aws-serverless-framework-main\src\main\java\com\serverless\util\ApiGatewayResponse.java
+D:\Workspace\Trabajo\qualifacts\nuevo\aws-serverless-framework-main\src\main\java\com\serverless\util\DynamoDBAdapter.java
+D:\Workspace\Trabajo\qualifacts\nuevo\aws-serverless-framework-main\src\main\java\com\serverless\handler\CreateProductHandler.java
+D:\Workspace\Trabajo\qualifacts\nuevo\aws-serverless-framework-main\src\main\java\com\serverless\handler\CreateProductEventHandler.java
+D:\Workspace\Trabajo\qualifacts\nuevo\aws-serverless-framework-main\src\main\java\com\serverless\util\Response.java
+D:\Workspace\Trabajo\qualifacts\nuevo\aws-serverless-framework-main\src\main\java\com\serverless\util\SNSAdapter.java
+D:\Workspace\Trabajo\qualifacts\nuevo\aws-serverless-framework-main\src\main\java\com\serverless\handler\GetProductHandler.java
+D:\Workspace\Trabajo\qualifacts\nuevo\aws-serverless-framework-main\src\main\java\com\serverless\repository\Product.java
+D:\Workspace\Trabajo\qualifacts\nuevo\aws-serverless-framework-main\src\main\java\com\serverless\handler\DeleteProductHandler.java
+D:\Workspace\Trabajo\qualifacts\nuevo\aws-serverless-framework-main\src\main\java\com\serverless\handler\ListProductsHandler.java

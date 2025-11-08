@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import com.serverless.util.DynamoDBAdapter;
-import org.apache.log4j.Logger;
 
 @DynamoDBTable(tableName = "PLACEHOLDER_PRODUCTS_TABLE_NAME")
 public class Product {
@@ -27,8 +26,6 @@ public class Product {
     private static DynamoDBAdapter db_adapter;
     private final AmazonDynamoDB client;
     private final DynamoDBMapper mapper;
-
-    private Logger logger = Logger.getLogger(this.getClass());
 
     private String id;
     private String name;
@@ -74,7 +71,6 @@ public class Product {
     public String toString() {
         return String.format("Product [id=%s, name=%s, price=$%f]", this.id, this.name, this.price);
     }
-
     // methods
     public Boolean ifTableExists() {
         return this.client.describeTable(PRODUCTS_TABLE_NAME).getTable().getTableStatus().equals("ACTIVE");
@@ -84,7 +80,6 @@ public class Product {
       DynamoDBScanExpression scanExp = new DynamoDBScanExpression();
       List<Product> results = this.mapper.scan(Product.class, scanExp);
       for (Product p : results) {
-        logger.info("Products - list(): " + p.toString());
       }
       return results;
     }
@@ -102,15 +97,12 @@ public class Product {
         PaginatedQueryList<Product> result = this.mapper.query(Product.class, queryExp);
         if (result.size() > 0) {
           product = result.get(0);
-          logger.info("Products - get(): product - " + product.toString());
         } else {
-          logger.info("Products - get(): product - Not Found.");
         }
         return product;
     }
 
     public void save(Product product) throws IOException {
-        logger.info("Products - save(): " + product.toString());
         this.mapper.save(product);
     }
 
@@ -120,10 +112,8 @@ public class Product {
         // get product if exists
         product = get(id);
         if (product != null) {
-          logger.info("Products - delete(): " + product.toString());
           this.mapper.delete(product);
         } else {
-          logger.info("Products - delete(): product - does not exist.");
           return false;
         }
         return true;

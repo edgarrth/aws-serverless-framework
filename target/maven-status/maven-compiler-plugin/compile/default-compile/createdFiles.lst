@@ -1,0 +1,11 @@
+com\serverless\handler\ListProductsHandler.class
+com\serverless\handler\CreateProductHandler.class
+com\serverless\repository\Product.class
+com\serverless\util\ApiGatewayResponse$Builder.class
+com\serverless\handler\GetProductHandler.class
+com\serverless\util\DynamoDBAdapter.class
+com\serverless\handler\CreateProductEventHandler.class
+com\serverless\handler\DeleteProductHandler.class
+com\serverless\util\Response.class
+com\serverless\util\SNSAdapter.class
+com\serverless\util\ApiGatewayResponse.class

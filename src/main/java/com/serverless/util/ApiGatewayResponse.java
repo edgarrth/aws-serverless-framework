@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
-import org.apache.log4j.Logger;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -45,10 +44,7 @@ public class ApiGatewayResponse {
 
 	public static class Builder {
 
-		private static final Logger LOG = Logger.getLogger(ApiGatewayResponse.Builder.class);
-
 		private static final ObjectMapper objectMapper = new ObjectMapper();
-
 		private int statusCode = 200;
 		private Map<String, String> headers = Collections.emptyMap();
 		private String rawBody;
@@ -95,7 +91,7 @@ public class ApiGatewayResponse {
 				try {
 					body = objectMapper.writeValueAsString(objectBody);
 				} catch (JsonProcessingException e) {
-					LOG.error("failed to serialize object", e);
+					System.err.println(e.getMessage());
 					throw new RuntimeException(e);
 				}
 			} else if (binaryBody != null) {

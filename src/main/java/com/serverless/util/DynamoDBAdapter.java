@@ -5,9 +5,6 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 
-import com.amazonaws.regions.Regions;
-import software.amazon.awssdk.regions.Region;
-
 public class DynamoDBAdapter {
 
     private static DynamoDBAdapter db_adapter = null;

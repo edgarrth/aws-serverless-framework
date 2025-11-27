@@ -1,22 +1,28 @@
-service: products-api
+service: products-api1
 
 custom:
   bucket:
-    base-serverless: 'axiz-serverless-template'
-    project-prefix: 'axiz-serverless'
+    base-serverless: 'poc-serverless-template'
+    project-prefix: 'poc-serverless'
     prune:
      automatic: true
      number: 3
   accountId: { 'Fn::Join': ['', [{ 'Ref': 'AWS::AccountId' }]] }
-  company: 'test'
+  company: 'poc'
   tables:
     productsTableName: '${self:custom.company}-products-${self:provider.stage}'
   topics:
     productTopic: '${self:custom.company}-topics-products-${self:provider.stage}'
-    productTopicArn: { 'Fn::Join': [ '', [ 'arn:aws:sns:${self:provider.region}:', { 'Ref': 'AWS::AccountId' }, ':${self:custom.topics.productTopic}', ],],}
+    #productTopicArn: { 'Fn::Join': [ '', [ 'arn:aws:sns:${self:provider.region}:', { 'Ref': 'AWS::AccountId' }, ':${self:custom.topics.productTopic}', ],],}
+    productTopicArn: "arn:aws:sns:us-east-1:888118966259:poc-topics-products-dev"
+  buckets:
+    productBucket: '${self:custom.company}-products-bucket-${self:provider.stage}'
+    productFolder: 'folder1'
   queues:
     productQueue: '${self:custom.company}-queues-products-${self:provider.stage}'
     productQueueArn: { 'Fn::Join': [ '', [ 'arn:aws:sqs:${self:provider.region}:', { 'Ref': 'AWS::AccountId' }, ':${self:custom.queues.productQueue}', ],],}
+    productS3Queue: '${self:custom.company}-queues-products-S3-${self:provider.stage}'
+    productS3QueueArn: { 'Fn::Join': [ '', [ 'arn:aws:sqs:${self:provider.region}:', { 'Ref': 'AWS::AccountId' }, ':${self:custom.queues.productS3Queue}', ], ], }
 provider:
   name: aws
   runtime: java11
@@ -53,14 +59,33 @@ provider:
         - sns:Publish
       Resource:
         - '${self:custom.topics.productTopicArn}'
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+        - sqs:ReceiveMessage
+      Resource:
+        - '${self:custom.queues.productQueueArn}'
+        - '${self:custom.queues.productS3QueueArn}'
+
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:ListBucket
+        - s3:GetObject
+      Resource:
+        - "arn:aws:s3:::${self:custom.buckets.productBucket}/*"
   environment:
     PRODUCTS_TABLE_NAME: ${self:custom.tables.productsTableName}
-    PRODUCTS_TOPIC: ${self:custom.topics.productTopicArn}
+    PRODUCTS_TOPIC_ARN: ${self:custom.topics.productTopicArn}
+    PRODUCTS_QUEUE_ARN: ${self:custom.queues.productQueueArn}
     REGION: ${self:provider.region}
+    BUCKET_NAME: ${self:custom.buckets.productBucket}
+    BUCKET_FOLDER_NAME: ${self:custom.buckets.productFolder}
 
 package:
   artifact: 'target/${self:service}-${self:provider.stage}.jar'
 plugins:
+  #- serverless-localstack
   - serverless-offline
   - serverless-prune-plugin
 
@@ -71,29 +96,28 @@ functions:
       - http:
           path: /products
           method: get
-  getProduct:
-    handler: com.serverless.handler.GetProductHandler
-    events:
-      - http:
-          path: /products/{id}
-          method: get
   createProduct:
     handler: com.serverless.handler.CreateProductHandler
     events:
       - http:
           path: /products
           method: post
-  deleteProduct:
-    handler: com.serverless.handler.DeleteProductHandler
-    events:
-      - http:
-          path: /products/{id}
-          method: delete
   eventProduct:
-    handler: src/controller/handler.CreateProductEventHandler
+    handler: com.serverless.handler.CreateProductEventHandler
     events:
       - sqs:
           arn: '${self:custom.queues.productQueueArn}'
+  eventS3Product:
+    handler: com.serverless.handler.CreateProductBucketEventHandler
+    events:
+      - sqs:
+          arn: '${self:custom.queues.productS3QueueArn}'
+  PublishLocalProductHandler:
+    handler: com.serverless.handler.PublishLocalProductHandler
+    events:
+      - http:
+          path: /products/local
+          method: post
 
 resources:
   Description: zzzzzz stack
@@ -125,6 +149,11 @@ resources:
                 - "ProductQueue"
                 - "Arn"
             Protocol: sqs
+          - Endpoint:
+              Fn::GetAtt:
+                - "ProductS3Queue"
+                - "Arn"
+            Protocol: sqs
     ProductQueue:
       Type: AWS::SQS::Queue
       Properties:
@@ -150,3 +179,38 @@ resources:
               Condition:
                 ArnEquals:
                   "aws:SourceArn": !Ref ProductTopic
+    ProductS3Queue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:custom.queues.productS3Queue}
+    ProductS3QueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - Ref: ProductS3Queue
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Sid: allow-sns-${self:custom.topics.productTopic}
+              Effect: Allow
+              Principal: "*"
+              Resource: !GetAtt
+                - ProductS3Queue
+                - Arn
+              Action:
+                - "SQS:SendMessage"
+                - "SQS:ReceiveMessage"
+              Condition:
+                ArnEquals:
+                  "aws:SourceArn": !Ref ProductTopic
+    ProductS3Bucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: ${self:custom.buckets.productBucket}
+  Outputs:
+    ExportSNSArn:
+      Description: The ARN for the exported SNS topic
+      Value:
+        "Ref": ProductTopic
+      Export:
+        Name: ProductTopic

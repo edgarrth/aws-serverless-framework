@@ -1,18 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <groupId>com.serverless</groupId>
-  <artifactId>products-api</artifactId>
+  <artifactId>products-api1</artifactId>
   <packaging>jar</packaging>
   <version>dev</version>
-  <name>products-api</name>
-
+  <name>products-api1</name>
   <properties>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -24,12 +21,16 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
   <dependencies>
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-lambda-java-core</artifactId>
       <version>1.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-lambda-java-events</artifactId>
+      <version>3.11.4</version>
     </dependency>
     <dependency>
       <groupId>com.amazonaws</groupId>
@@ -60,19 +61,33 @@
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sns</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-s3</artifactId>
+      <version>1.11.119</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-xml</artifactId>
+      <version>2.13.0</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.xml.bind</groupId>
+      <artifactId>jaxb-api</artifactId>
+      <version>2.3.1</version>
+    </dependency>
   </dependencies>
-
   <build>
     <plugins>
       <!--
-        Using the Apache Maven Shade plugin to package the jar
+              Using the Apache Maven Shade plugin to package the jar
 
-        "This plugin provides the capability to package the artifact
-        in an uber-jar, including its dependencies and to shade - i.e. rename -
-        the packages of some of the dependencies."
+              "This plugin provides the capability to package the artifact
+              in an uber-jar, including its dependencies and to shade - i.e. rename -
+              the packages of some of the dependencies."
 
-        Link: https://maven.apache.org/plugins/maven-shade-plugin/
-      -->
+              Link: https://maven.apache.org/plugins/maven-shade-plugin/
+             -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -91,5 +106,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>

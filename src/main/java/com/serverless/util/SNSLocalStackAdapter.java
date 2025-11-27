@@ -1,21 +1,31 @@
 package com.serverless.util;
 
 //import com.amazonaws.regions.Regions;
+import com.ctc.wstx.shaded.msv_core.util.Uri;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 import software.amazon.awssdk.services.sns.model.PublishResponse;
 import software.amazon.awssdk.services.sns.model.SnsException;
 
-public class SNSAdapter {
+import java.net.URI;
+import java.net.URISyntaxException;
+
+public class SNSLocalStackAdapter {
 
     private static String region = System.getenv("REGION");
-    private static  SnsClient snsClient = SnsClient.builder().region(Region.of(region)).build();
 
-    public static void publishToSNS(String message, String topicArn) {
 
-        //logger.info("Message Received: "+message+" "+ "Topic: "+topicArn);
-        System.out.println("[SNS-Client] Message Received: "+message+" "+ "Topic: "+topicArn.toString());
+    public static void publishToSNS(String message, String topicArn) throws URISyntaxException {
+        URI localStackUri = new URI("http://localhost:4566");
+
+         SnsClient snsClient = SnsClient.builder()
+                .region(Region.of(region))
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("user","pass")))
+                .endpointOverride(localStackUri)
+                .build();
 
         try {
             PublishRequest request = PublishRequest.builder()
@@ -24,7 +34,7 @@ public class SNSAdapter {
                     .build();
 
             PublishResponse result = snsClient.publish(request);
-            System.out.println(result.messageId() + " Mensaje enviado. Estatus:  " + result.sdkHttpResponse().statusCode());
+            System.out.println("[LOCAL-STACK] SNS-CLIENT: Mensaje enviado. Estatus:  " + result.sdkHttpResponse().statusCode());
 
         } catch (SnsException e) {
             System.err.println(e.awsErrorDetails().errorMessage());
